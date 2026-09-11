@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zelection Interior - O2O Performance Dashboard</title>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <p>กำลังโหลดข้อมูลโครงการ...</p>
+  </div>
+
+  <div class="dashboard-wrapper">
+    <!-- Header -->
+    <header class="top-header">
+      <div class="brand-title">
+        <i class="fa-solid fa-couch icon-brand"></i>
+        <div>
+          <h1>Zelection Interior</h1>
+          <p>O2O Online Lead Tracking & Analytics Dashboard</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btnRefresh" class="btn btn-secondary"><i class="fa-solid fa-rotate"></i> รีเฟรชข้อมูล</button>
+        <button id="btnExportExcel" class="btn btn-outline"><i class="fa-solid fa-file-excel"></i> Excel</button>
+        <button id="btnExportCSV" class="btn btn-outline"><i class="fa-solid fa-file-csv"></i> CSV</button>
+        <button id="btnExportPDF" class="btn btn-primary"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+      </div>
+    </header>
+
+    <!-- Filter Bar -->
+    <section class="filter-card">
+      <div class="filter-header">
+        <i class="fa-solid fa-filter"></i> ตัวกรองข้อมูล (Global Filters)
+      </div>
+      <div class="filter-grid">
+        <div class="filter-group">
+          <label for="filterBranch">สาขา (Branch)</label>
+          <select id="filterBranch">
+            <option value="ALL">ทั้งหมดทุกสาขา</option>
+            <option value="CDC">CDC</option>
+            <option value="BN">Bangna (BN)</option>
+            <option value="RP">Ratchaphruek (RP)</option>
+            <option value="RM2">Rama 2 (RM2)</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="filterChannel">ช่องทางติดต่อ (Channel)</label>
+          <select id="filterChannel">
+            <option value="ALL">ทุกช่องทาง</option>
+            <option value="FB">Facebook</option>
+            <option value="LINE">LINE Official</option>
+            <option value="IG">Instagram</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="filterStatus">สถานะ / ความพร้อม</label>
+          <select id="filterStatus">
+            <option value="ALL">ทุกสถานะ</option>
+            <option value="พร้อม">พร้อมตกแต่ง</option>
+            <option value="ไม่พร้อม">ยังไม่พร้อม / สอบถามข้อมูล</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="filterAdmin">ผู้ดูแล (Admin)</label>
+          <select id="filterAdmin">
+            <option value="ALL">ทั้งหมด</option>
+          </select>
+        </div>
+        <div class="filter-group search-group">
+          <label for="globalSearch">ค้นหาโครงการ / ชื่อลูกค้า</label>
+          <div class="search-input-wrapper">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="globalSearch" placeholder="พิมพ์ชื่อ, เบอร์โทร, หมู่บ้าน/คอนโด...">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- KPI Cards -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon blue"><i class="fa-solid fa-comments"></i></div>
+        <div class="kpi-data">
+          <span class="kpi-label">จำนวนทักแชตทั้งหมด</span>
+          <h2 id="kpiTotalLeads">0</h2>
+          <span class="kpi-subtext" id="kpiChannelBreakdown">FB: 0 | LINE: 0 | IG: 0</span>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon indigo"><i class="fa-solid fa-share-nodes"></i></div>
+        <div class="kpi-data">
+          <span class="kpi-label">จำนวนส่งต่อสาขา</span>
+          <h2 id="kpiForwarded">0</h2>
+          <span class="kpi-subtext" id="kpiForwardRate">0% ของทักแชต</span>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon teal"><i class="fa-solid fa-store"></i></div>
+        <div class="kpi-data">
+          <span class="kpi-label">เข้าสาขาจริง (Visit)</span>
+          <h2 id="kpiActualVisits">0</h2>
+          <span class="kpi-subtext" id="kpiVisitRate">0% ของส่งต่อ</span>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon sky"><i class="fa-solid fa-ruler-combined"></i></div>
+        <div class="kpi-data">
+          <span class="kpi-label">เปิดวัดพื้นที่ / Sales Order</span>
+          <h2 id="kpiSiteVisits">0</h2>
+          <span class="kpi-subtext" id="kpiConversionRate">Conversion: 0%</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Visualizations Layout -->
+    <section class="charts-grid">
+      <!-- Line Chart -->
+      <div class="chart-card col-span-2">
+        <div class="chart-header">
+          <h3><i class="fa-solid fa-chart-line"></i> แนวโน้มการรับลูกค้าายเดือน (Monthly Conversion Funnel)</h3>
+        </div>
+        <div class="chart-container">
+          <canvas id="lineTrendChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Bar Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3><i class="fa-solid fa-chart-column"></i> สถิติลูกค้าแยกตามสาขา (Leads by Branch)</h3>
+        </div>
+        <div class="chart-container">
+          <canvas id="barBranchChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Donut Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3><i class="fa-solid fa-chart-pie"></i> สัดส่วนช่องทางออนไลน์ (Channel Distribution)</h3>
+        </div>
+        <div class="chart-container">
+          <canvas id="donutChannelChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Pie Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3><i class="fa-solid fa-pie-chart"></i> ประเภทอสังหาริมทรัพย์ (Property Types)</h3>
+        </div>
+        <div class="chart-container">
+          <canvas id="piePropertyChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Treemap / Heatmap Matrix -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3><i class="fa-solid fa-border-all"></i> ความหนาแน่นโครงการแยกตามประเภท & สาขา</h3>
+        </div>
+        <div id="treemapContainer" class="treemap-container">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Data Table Section -->
+    <section class="table-card">
+      <div class="table-header-bar">
+        <h3><i class="fa-solid fa-table-list"></i> รายการข้อมูลโครงการและการติดตามลูกค้า</h3>
+        <span class="table-count" id="tableRecordCount">แสดง 0 รายการ</span>
+      </div>
+      <div class="table-responsive">
+        <table id="projectsTable">
+          <thead>
+            <tr>
+              <th data-sort="docNo">เลขที่เอกสาร <i class="fa-solid fa-sort"></i></th>
+              <th data-sort="date">วันที่ <i class="fa-solid fa-sort"></i></th>
+              <th data-sort="channel">ช่องทาง <i class="fa-solid fa-sort"></i></th>
+              <th data-sort="branch">สาขา <i class="fa-solid fa-sort"></i></th>
+              <th data-sort="customer">ชื่อลูกค้า <i class="fa-solid fa-sort"></i></th>
+              <th data-sort="phone">เบอร์ติดต่อ</th>
+              <th data-sort="project">โครงการ/หมู่บ้าน <i class="fa-solid fa-sort"></i></th>
+              <th data-sort="propType">ประเภท <i class="fa-solid fa-sort"></i></th>
+              <th data-sort="status">ความพร้อม <i class="fa-solid fa-sort"></i></th>
+              <th data-sort="admin">ผู้ดูแล <i class="fa-solid fa-sort"></i></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <!-- Dynamic Rows -->
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Table Pagination -->
+      <div class="table-footer">
+        <div class="page-size-selector">
+          <label>แสดงหน้าละ:</label>
+          <select id="pageSize">
+            <option value="10">10</option>
+            <option value="25" selected>25</option>
+            <option value="50">50</option>
+          </select>
+        </div>
+        <div class="pagination-controls" id="pagination">
+          <!-- Dynamic Pagination Buttons -->
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Detail Modal -->
+  <div id="detailModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">รายละเอียดโครงการ</h2>
+        <span class="close-modal" id="closeModal">&times;</span>
+      </div>
+      <div class="modal-body" id="modalBody">
+        <!-- Dynamic Details Content -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCloseModal">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SheetJS & jsPDF Extensions for Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+  <!-- Custom App JS -->
+  <script src="app.js"></script>
+</body>
+</html>
